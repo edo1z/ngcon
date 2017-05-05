@@ -1,0 +1,129 @@
+#!/usr/bin/zsh
+
+confpath="/etc/nginx/nginx.conf"
+apath="/etc/nginx/sites-available"
+epath="/etc/nginx/sites-enabled"
+default_web_root="/usr/share/nginx/html"
+conf_filename_for_cert="t_forcert"
+
+chk_file () {
+  if [ -e $1 ]; then
+    return 1
+  else
+    echo $1" is not found."
+    return 0
+  fi
+}
+
+rmconf () {
+  chk_file $epath/$1
+  if [ "$?" = 1 ]; then
+    rm $epath/$1
+    return 1
+  fi
+  return 0
+}
+
+delete () {
+  if [ -e $epath/$1 ]; then
+    rm $epath/$1
+  fi
+  if [ -e $apath/$1 ]; then
+    rm $apath/$1
+  fi
+}
+
+add () {
+  if [ "$1" = "" ]; then
+    echo "please input filename."
+    return 0
+  else
+    chk_file $apath/$1
+    if [ "$?" = 1 ]; then
+      ln -s $apath/$1 $epath
+      return 1
+    fi
+    return 0
+  fi
+}
+
+new () {
+  if [ -e $apath/$1 -a "$2" != "" ]; then
+    cp $apath/$1 $apath/$2
+    vim $apath/$2
+  else
+    echo $1" is not found, or target file name is blank."
+  fi
+}
+
+get_ssl () {
+  if [ "$1" = "" ]; then
+    echo "please input domain."
+  else
+    if [ -e $apath/$conf_filename_for_cert ]; then
+      add $conf_filename_for_cert
+      if [ $? = 1 ]; then
+        nginx_restart
+        certbot certonly --webroot -w $default_web_root -d $1
+        rmconf $conf_filename_for_cert
+      fi
+    else
+      echo "$apath/$conf_filename_for_cert is not found."
+    fi
+  fi
+}
+
+nginx_test () {
+  nginx -t -c $confpath
+}
+
+nginx_restart () {
+  systemctl restart nginx
+}
+
+if [ "$1" = "lsa" ]; then
+  ls -al $apath
+
+elif [ "$1" = "lse" ]; then
+  ls -al $epath
+
+elif [ "$1" = "add" ]; then
+  add $2
+
+elif [ "$1" = "new" ]; then
+  new $2 $3
+
+elif [ "$1" = "a" ]; then
+  echo $apath
+
+elif [ "$1" = "e" ]; then
+  echo $epath
+
+elif [ "$1" = "test" ]; then
+  nginx_test
+
+elif [ "$1" = "re" ]; then
+  nginx_restart
+
+elif [ "$1" = "vim" ]; then
+  chk_file $apath/$2
+  if [ "$?" = 1 ]; then
+    vim $apath/$2
+  fi
+
+elif [ "$1" = "rm" ]; then
+  rmconf $2
+
+elif [ "$1" = "rmall" ]; then
+  rm $epath/*
+
+elif [ "$1" = "delete" ]; then
+  delete $2
+
+elif [ "$1" = "get_ssl" ]; then
+  get_ssl $2
+
+else
+  echo "commands [lsa, lse, add, new, a, e, test, re, vim, rm, rmall, delete, get_ssl]"
+fi
+
