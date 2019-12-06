@@ -22,7 +22,7 @@
 gitから落として、PATH通ってるフォルダ（/usr/local/binを想定）に置きます。
 
 ```
-$ git clone https://github.com/endoyuta/ngcon.git
+$ git clone https://github.com/edo1z/ngcon.git
 $ sudo mv ngcon/ngcon /usr/local/bin
 $ sudo rm -rf ngcon
 ```
